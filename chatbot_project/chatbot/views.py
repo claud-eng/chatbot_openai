@@ -105,9 +105,9 @@ def chat(request):
                 session_data['state'] = 'solicitando_comuna'
                 response = f'Gracias {primer_nombre}, ¿En qué comuna estás interesado en cotizar?'
             else:
-                response = 'Parece que no has ingresado tu nombre de manera válida. Por favor, intenta nuevamente ingresando al menos tu primer nombre y apellido.'
+                response = 'Parece que no has ingresado tu nombre de manera válida. Por favor, intenta nuevamente ingresando al menos tu primer nombre.'
         else:
-            response = 'Por favor, ingresa al menos tu primer nombre y primer apellido.'
+            response = 'Por favor, ingresa al menos tu primer nombre.'
 
     elif session_data['state'] == 'solicitando_comuna':
         # Verifica si la comuna ingresada se encuentra en el diccionario
@@ -329,12 +329,21 @@ def chat(request):
                     session_data['state'] = 'finalizacion'
             else:
                 if not producto_destacado:
-                    response = "Lo siento, no hemos encontrado inmuebles que coincidan con tus criterios. ¿Te puedo asistir en algo más?"
-                    session_data['state'] = 'finalizacion'  # Cambia a finalización para manejar la siguiente acción
-                    options = [
-                        {'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
-                        {'text': 'No, gracias', 'value': 'inicio'}
-                    ]
+                    # Verifica si ya se ha proporcionado el número de teléfono
+                    if not session_data.get('ha_dado_telefono', False):
+                        response = "Lo siento, no hemos encontrado inmuebles que coincidan con tus criterios. Para continuar con la cotización y tener una comunicación más directa, ¿te gustaría proporcionar un número de teléfono?"
+                        options = [
+                            {'text': 'Sí, deseo dar mi número de teléfono', 'value': 'dar_telefono'},
+                            {'text': 'No, gracias', 'value': 'no_dar_telefono'}  
+                        ]
+                        session_data['state'] = 'solicitando_telefono'  # Cambio de estado para solicitar el teléfono
+                    else:
+                        response = "Lo siento, no hemos encontrado inmuebles que coincidan con tus criterios. ¿Te puedo asistir en algo más?"
+                        options = [
+                            {'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
+                            {'text': 'No, gracias', 'value': 'inicio'}
+                        ]
+                        session_data['state'] = 'finalizacion'  # Cambia a finalización para manejar la siguiente acción
         else:
             # Si falta información, ofrece volver al paso donde falta la información.
             response = "Parece que falta información para completar tu solicitud. Por favor, verifica que has ingresado todos los datos requeridos."
@@ -422,7 +431,7 @@ def chat(request):
             if session_data.get('busqueda_exitosa', False) and not session_data.get('ha_dado_telefono', False):
                 # Solicitar el número de teléfono solo si la búsqueda anterior fue exitosa
                 # y el teléfono no se ha proporcionado aún
-                response = "Para continuar con la cotización y para una comunicación más directa, ¿te gustaría proporcionar un número de teléfono?"
+                response = "Para continuar con la cotización y tener una comunicación más directa, ¿te gustaría proporcionar un número de teléfono?"
                 options = [
                     {'text': 'Sí, deseo dar mi número de teléfono', 'value': 'dar_telefono'},
                     {'text': 'No, gracias', 'value': 'no_dar_telefono'}

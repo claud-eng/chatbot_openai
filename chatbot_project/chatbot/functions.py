@@ -12,7 +12,7 @@ def generate_openai_response(prompt):
         response = openai.Completion.create(
             engine="gpt-3.5-turbo-instruct",
             prompt=prompt,
-            max_tokens=250,
+            max_tokens=1000,
             temperature=0.3
         )
         openai_response = response.choices[0].text.strip()
@@ -25,7 +25,7 @@ def send_email(name, comuna, email, project, telefono, precio_texto_amigable, ti
     sg = SendGridAPIClient(settings.EMAIL_HOST_PASSWORD)
     from_email = settings.DEFAULT_FROM_EMAIL
     to_email = 'czamorano1995@gmail.com'  # Cambia esto al correo que desees
-    subject = 'Datos de contacto y cotización'
+    subject = 'Datos de contacto'
 
     # Determina el artículo adecuado para el tipo de inmueble
     articulo = 'un' if tipo_inmueble == 'departamento' else 'una'
@@ -129,3 +129,4 @@ def obtener_producto_mas_barato(productos):
         return None
     producto_mas_barato = min(productos, key=lambda x: x['PrecioTotalUF'])
     return producto_mas_barato
+
