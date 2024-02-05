@@ -30,8 +30,15 @@ def chat(request):
     host = request.get_host()
 
     # Determinar el proyecto basado en el dominio
-    project = 'Test 2' if '127.0.0.1:8000' in host else 'Test 1' if 'localhost:8000' in host else 'Desconocido'
-    
+    if 'localhost:8000' in host:
+        project = 'Test 1'
+    elif '127.0.0.1:8000' in host:
+        project = 'Test 2'
+    elif 'otrodominio.com' in host:
+        project = 'Test 3'
+    else:
+        project = 'Desconocido'
+
     user_message = request.GET.get('message', '').strip().lower()
     session_data = request.session.get('chat_data', {'state': 'inicio', 'context': []})
 
