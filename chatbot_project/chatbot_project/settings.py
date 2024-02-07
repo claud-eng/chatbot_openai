@@ -81,15 +81,17 @@ WSGI_APPLICATION = 'chatbot_project.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-	        'default': {
-	            'ENGINE': 'django.db.backends.mysql',
-	            'NAME': 'db_openai',
-	            'USER': 'claud',
-	            'PASSWORD': 'admin',
-	            'HOST': 'localhost',
-	            'PORT': '3307',
-	        }
-	    }
+    'default': {
+        'ENGINE': os.getenv('DATABASE_DEFAULT_ENGINE'),
+        'NAME': os.getenv('DATABASE_DEFAULT_NAME'),
+        'HOST': os.getenv('DATABASE_DEFAULT_HOST'),
+        'PORT': os.getenv('DATABASE_DEFAULT_PORT'),
+        'OPTIONS': {
+            'driver': os.getenv('DATABASE_DEFAULT_OPTIONS_DRIVER'),
+            'extra_params': os.getenv('DATABASE_DEFAULT_OPTIONS_EXTRA_PARAMS'),
+        },
+    }
+}
 
 
 # Password validation
