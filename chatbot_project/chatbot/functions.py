@@ -35,9 +35,9 @@ def send_email(name, comuna, email, project, telefono, precio_texto_amigable, ti
     bano_texto = 'baño' if banos == '1' else 'baños'
 
     # Formato del mensaje de comentarios
-    comentarios = f'La persona cotizó {articulo} {tipo_inmueble}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto}.'
+    comentario = f'La persona cotizó {articulo} {tipo_inmueble}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto}.'
 
-    content = f'ORIGEN: ChatBot\nPROYECTO: {project}\nNOMBRE Y APELLIDO: {name}\nCOMUNA: {comuna}\nEMAIL: {email}\nTELEFONO: {telefono}\nPRECIO: {precio_texto_amigable}\nCOMENTARIOS: {comentarios}'
+    content = f'ORIGEN: ChatBot\nPROYECTO: {project}\nNOMBRE Y APELLIDO: {name}\nCOMUNA: {comuna}\nEMAIL: {email}\nTELEFONO: {telefono}\nPRECIO: {precio_texto_amigable}\nCOMENTARIO: {comentario}'
 
     message = Mail(from_email=from_email, to_emails=to_email, subject=subject, plain_text_content=content)
     try:
