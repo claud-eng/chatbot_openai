@@ -48,14 +48,14 @@
 
 /* Estilos cuando el chatbot está abierto */
 .chat-widget.open {
-    /* Debe tener estilos para mostrar el chat */
+    opacity: 1;
     transform: scale(1);
     transition: transform 0.3s ease-in-out;
 }
 
 /* Estilos cuando el chatbot está minimizado */
 .chat-widget.minimized {
-    /* Debe tener estilos para ocultar el chat */
+    opacity: 1;
     transform: scale(0);
     transition: transform 0.3s ease-in-out;
 }
@@ -96,8 +96,10 @@
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Oculta el contenido que desborde */
+    justify-content: flex-end; 
+    overflow: hidden; 
     transform: scale(1); /* El widget es visible */
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
 
 /* Botón para abrir/cerrar el chatbot */
@@ -118,26 +120,26 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden; /* Oculta el contenido que desborde */
+    overflow: hidden; 
     background-color: white; 
     padding-top: 0px;
+    padding-bottom: 70px; /* Espacio para la barra de entrada de mensajes */
 }
 
 /* Caja donde se muestran los mensajes */
 #chatBox {
-    display: flex; 
-    flex-direction: column; /* Los elementos se deben apilar verticalmente */
     overflow-y: auto; /* Habilita la barra de desplazamiento */
     flex-grow: 1;
     padding: 10px;
+    margin-bottom: 0px; 
 }
 
 /* Panel para mostrar las opciones de respuesta */
 #optionsPanel {
     padding: 10px;
-    border-top: 1px solid #dee2e6; /* Añade un borde para separar del chatBox */
+    border-top: 1px solid #dee2e6; 
     overflow-y: auto; /* Permite desplazamiento si hay más opciones de las que pueden caber en el espacio visible */
-    margin-bottom: 50px; /* Espacio para la barra de entrada de mensajes */
+    margin-bottom: 60px; /* Espacio para la barra de entrada de mensajes */
 }
 
 /* Mensajes del usuario y del bot */
@@ -152,11 +154,15 @@
     background-color: #0a63bd;
     color: white;
     align-self: flex-end;
+    margin-left: 150px; 
+    margin-right: 10px; /* Espacio a la derecha del mensaje */
+    max-width: calc(100% - 60px); 
 }
 
 .bot-message {
     background-color: #f8f9fa;
     align-self: flex-start;
+    margin-left: 10px; 
 }
 
 /* Botón de enviar ajustado con el nuevo color */
@@ -170,11 +176,14 @@
     background-color: #fff;
     color: #0a63bd;
     border: 1px solid #0a63bd;
-    padding: 5px 10px;
-    margin: 5px 0;
+    padding: 10px 15px; /* Aumentar el padding para mejor visualización */
+    margin: 5px 10px 5px 0; /* Margen superior e inferior de 5px y margen derecho de 10px */
     border-radius: 5px;
     cursor: pointer;
     text-align: center;
+    display: block; /* Hace que cada botón sea un bloque y ocupe su propia fila */
+    width: calc(100% - 20px); /* Ajusta el ancho al 100% menos los márgenes laterales */
+    box-sizing: border-box; /* Asegura que el padding y el borde se incluyan en el ancho total */
 }
 
 .option-button:hover {
@@ -194,5 +203,3 @@
     bottom: 0;
     left: 10px; /* Alinea con el padding del chatBox */
 }
-
-

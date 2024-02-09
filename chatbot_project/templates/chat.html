@@ -5,37 +5,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Chatbot de prueba</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{% static 'css/widget.css' %}">
+
 </head>
 <body class="bg-dark">
 
-    <div class="chat-widget">
-        <div class="chat-header">
-            <!-- Panel de encabezado que contiene los botones -->
-            <a href="https://iconcreta.com/" target="_blank" class="chat-logo-link">
-                <img src="{% static 'img/logo.png' %}" alt="Logo Empresa" class="chat-logo">
-            </a>
-            <button class="minimize-chat-btn" onclick="minimizeChat()">-</button> <!-- Botón de minimizar -->
-            <button class="toggle-chat-btn" onclick="toggleChat()">Chat</button> <!-- Botón de alternar -->
-        </div>
-        <div class="chat-container shadow-sm">
-            <div id="chatBox" class="shadow-sm"></div>
-            <div id="optionsPanel" class="shadow-sm"></div>
-            <div class="input-group">
-                <input type="text" id="messageInput" class="form-control" placeholder="Escribe tu mensaje aquí...">
-                <div class="input-group-append">
-                    <button class="btn btn-primary" type="button" onclick="sendMessage()">Enviar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="minimized-icon" onclick="toggleChat()">+</div> <!-- Ícono para maximizar el chatbot -->
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="{% static 'js/widget.js' %}"></script>
 
 </body>
