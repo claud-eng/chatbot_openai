@@ -29,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-hcaz7$&y7!tz(8p($%*xn^6^^(9&8lk&)n_o09d&4zd)b_(5)x'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', 'server_ip']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,17 +82,15 @@ WSGI_APPLICATION = 'chatbot_project.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DATABASE_DEFAULT_ENGINE'),
-        'NAME': os.getenv('DATABASE_DEFAULT_NAME'),
-        'HOST': os.getenv('DATABASE_DEFAULT_HOST'),
-        'PORT': os.getenv('DATABASE_DEFAULT_PORT'),
-        'OPTIONS': {
-            'driver': os.getenv('DATABASE_DEFAULT_OPTIONS_DRIVER'),
-            'extra_params': os.getenv('DATABASE_DEFAULT_OPTIONS_EXTRA_PARAMS'),
-        },
-    }
-}
+	        'default': {
+	            'ENGINE': 'django.db.backends.mysql',
+	            'NAME': 'db_openai',
+	            'USER': 'claud',
+	            'PASSWORD': 'admin',
+	            'HOST': 'localhost',
+	            'PORT': '3307',
+	        }
+	    }
 
 
 # Password validation
@@ -128,10 +127,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    BASE_DIR / 'static',
 ]
 
 # Default primary key field type

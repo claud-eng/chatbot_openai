@@ -6,6 +6,7 @@ import requests
 from xml.etree import ElementTree
 import random
 import os 
+import unicodedata
 
 def generate_openai_response(prompt):
     try:
@@ -130,3 +131,11 @@ def obtener_producto_mas_barato(productos):
     producto_mas_barato = min(productos, key=lambda x: x['PrecioTotalUF'])
     return producto_mas_barato
 
+# Función para remover acentos de una cadena de texto
+def quitar_acentos(texto):
+    texto_sin_acentos = ''.join((c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn'))
+    return texto_sin_acentos
+
+# Función para capitalizar cada palabra en el nombre de la comuna
+def capitalizar_comuna(comuna):
+    return ' '.join(palabra.capitalize() for palabra in comuna.split())

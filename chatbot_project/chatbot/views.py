@@ -110,40 +110,41 @@ def chat(request):
                 primer_nombre = extraer_primer_nombre(nombre_completo)
                 session_data['context'].append({'nombre_completo': nombre_completo, 'primer_nombre': primer_nombre})
                 session_data['state'] = 'solicitando_comuna'
-                response = f'Gracias {primer_nombre}, ¿En qué comuna estás interesado en cotizar?'
+                response = f'Gracias {primer_nombre}, ¿En qué comuna estás interesado en cotizar? Por favor sólo ingresa el nombre de una comuna.'
             else:
                 response = 'Parece que no has ingresado tu nombre de manera válida. Por favor, intenta nuevamente ingresando al menos tu primer nombre.'
         else:
             response = 'Por favor, ingresa al menos tu primer nombre.'
 
     elif session_data['state'] == 'solicitando_comuna':
-        # Verifica si la comuna ingresada se encuentra en el diccionario
-        prompt_verificacion = f"El usuario dijo: '{user_message}'. Dada la lista de comunas {list(comunas_chile.keys())}, ¿la frase del usuario contiene el nombre de alguna comuna? Responde sí o no."
-        response_verificacion = generate_openai_response(prompt_verificacion)
-        if "sí" in response_verificacion.lower():
-            # Extrae la comuna del mensaje del usuario
-            prompt_extraccion = f"Extrae la comuna de forma capitalizada del siguiente texto, considerando estas opciones: {list(comunas_chile.keys())}: '{user_message}'."
-            comuna_extraida = generate_openai_response(prompt_extraccion).strip()
+        # Normaliza y capitaliza la entrada del usuario
+        comuna_usuario = capitalizar_comuna(quitar_acentos(user_message))
+
+        # Normaliza las claves del diccionario comunas_chile para hacer la comparación insensible a acentos
+        comunas_chile_normalizadas = {quitar_acentos(comuna).upper(): valor for comuna, valor in comunas_chile.items()}
+
+        # Verifica si la comuna ingresada por el usuario, convertida a mayúsculas y sin acentos, se encuentra en el diccionario
+        if comuna_usuario.upper() in comunas_chile_normalizadas:
+            # La comuna ya está en el formato correcto para ser guardada gracias a la función capitalizar_comuna
+            comuna_extraida = comuna_usuario
             session_data['context'].append({'comuna': comuna_extraida})
             session_data['state'] = 'solicitando_tipo_inmueble'
             
-            # Recuperar el 'primer_nombre' del contexto
+            # Verifica si el 'primer_nombre' se encuentra en el contexto
             primer_nombre = None
             for item in session_data['context']:
                 if 'primer_nombre' in item:
                     primer_nombre = item['primer_nombre']
-                    break  # Salimos del bucle una vez que encontramos el primer nombre
+                    break
             
-            if primer_nombre:
-                response = f'Genial, ¿qué tipo de inmueble estás buscando?'
-            else:
-                response = 'Genial, ¿qué tipo de inmueble estás buscando?'
+            response = f'Genial {primer_nombre}, ¿qué tipo de inmueble estás buscando?' if primer_nombre else 'Genial, ¿qué tipo de inmueble estás buscando?'
             options = [
                 {'text': 'Departamento', 'value': 'departamento'},
                 {'text': 'Casa', 'value': 'casa'}
             ]
         else:
-            response = 'No he podido identificar una comuna válida en tu respuesta. Por favor, ingresa el nombre de una comuna en Chile como Las Condes, Santiago Centro o La Florida, etc.'
+            response = 'No he podido identificar una comuna válida en tu respuesta. Por favor, intenta ingresando el nombre de una comuna en Chile como Las Condes, Santiago Centro o La Florida, etc.'
+
 
     elif session_data['state'] == 'solicitando_tipo_inmueble':
         session_data['context'].append({'tipo_inmueble': user_message})
