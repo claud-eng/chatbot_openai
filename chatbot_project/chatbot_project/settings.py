@@ -44,9 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'chatbot',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -56,6 +58,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'chatbot_project.urls'
 
@@ -82,15 +86,17 @@ WSGI_APPLICATION = 'chatbot_project.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-	        'default': {
-	            'ENGINE': 'django.db.backends.mysql',
-	            'NAME': 'db_openai',
-	            'USER': 'claud',
-	            'PASSWORD': 'admin',
-	            'HOST': 'localhost',
-	            'PORT': '3307',
-	        }
-	    }
+    'default': {
+        'ENGINE': os.getenv('DATABASE_DEFAULT_ENGINE'),
+        'NAME': os.getenv('DATABASE_DEFAULT_NAME'),
+        'HOST': os.getenv('DATABASE_DEFAULT_HOST'),
+        'PORT': os.getenv('DATABASE_DEFAULT_PORT'),
+        'OPTIONS': {
+            'driver': os.getenv('DATABASE_DEFAULT_OPTIONS_DRIVER'),
+            'extra_params': os.getenv('DATABASE_DEFAULT_OPTIONS_EXTRA_PARAMS'),
+        },
+    }
+}
 
 
 # Password validation
@@ -132,6 +138,44 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+'''LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'C:/LogsIConcreta/django_error.log',
+            'formatter': 'verbose',
+        },
+        'request_handler': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'C:/LogsIConcreta/django_requests.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['request_handler'],
+            'level': 'DEBUG',  
+            'propagate': False,  
+        },
+    },
+}'''
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

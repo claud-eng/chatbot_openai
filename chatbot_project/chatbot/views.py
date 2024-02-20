@@ -92,7 +92,7 @@ def chat(request):
         elif 'reclamo' in user_message:
             session_data['state'] = 'inicio'  # Reiniciamos la conversación
             session_data['from_reclamo'] = True  # Marcamos que viene de hacer un reclamo
-            response = 'Lamento saber que tienes un reclamo. Por favor, sigue las instrucciones en la sección contáctanos en el siguiente enlace: <a href="https://edificioalcala.cl/" target="_blank">edificioalcala.cl</a>'
+            response = 'Lamento saber que tienes un reclamo. Por favor, sigue las instrucciones en la sección contáctanos en el siguiente enlace: <a href="https://www.google.cl" target="_blank">https://www.google.cl</a>'
             options = [
                 {'text': 'Continuar', 'value': 'inicio'}
             ]

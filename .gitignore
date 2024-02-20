@@ -1,5 +1,11 @@
 # Ignorar el archivo .env
 .env
 
+# Ignorar el archivo web.config
+web.config
+
 # Ignorar la carpeta ambiente_virtual
 ambiente_virtual/
+
+# Ignorar la carpeta .vs
+.vs/

@@ -1,4 +1,4 @@
-(function() {
+(function () {
     // Cargar Bootstrap CSS
     var bootstrapLink = document.createElement('link');
     bootstrapLink.rel = 'stylesheet';
@@ -8,28 +8,31 @@
     // Cargar estilos personalizados
     var customStylesLink = document.createElement('link');
     customStylesLink.rel = 'stylesheet';
-    customStylesLink.href = '/static/css/widget.css'; 
+    customStylesLink.href = 'http://desarrollo.iconcreta.com/static/css/widget.css';
     document.head.appendChild(customStylesLink);
 
     // Cargar jQuery
     var jqueryScript = document.createElement('script');
     jqueryScript.src = 'https://code.jquery.com/jquery-3.5.1.slim.min.js';
-    document.body.appendChild(jqueryScript);
+    document.head.appendChild(jqueryScript); // Modificado para cargar en el head
 
-    // Cargar Popper.js
-    var popperScript = document.createElement('script');
-    popperScript.src = 'https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js';
-    document.body.appendChild(popperScript);
+    // Cargar Popper.js y Bootstrap JS solo después de que jQuery esté cargado
+    jqueryScript.onload = function () {
+        // Cargar Popper.js
+        var popperScript = document.createElement('script');
+        popperScript.src = 'https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js';
+        document.body.appendChild(popperScript);
 
-    // Cargar Bootstrap JS
-    var bootstrapScript = document.createElement('script');
-    bootstrapScript.src = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js';
-    document.body.appendChild(bootstrapScript);
+        // Cargar Bootstrap JS
+        var bootstrapScript = document.createElement('script');
+        bootstrapScript.src = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js';
+        document.body.appendChild(bootstrapScript);
 
-    // Esperar a que jQuery y Popper.js estén cargados antes de inicializar el widget
-    bootstrapScript.onload = function() {
-        // Inicializar el widget aquí
-        initChatWidget();
+        // Esperar a que Popper.js esté cargado antes de inicializar el widget
+        bootstrapScript.onload = function () {
+            // Inicializar el widget aquí
+            initChatWidget();
+        };
     };
 
     var isChatWidgetInitialized = false; // Controla si el widget ya fue inicializado
@@ -47,7 +50,7 @@
         chatWidgetDiv.innerHTML = `
             <div class="chat-header">
                 <a href="https://iconcreta.com/" target="_blank" class="chat-logo-link">
-                    <img src="/static/img/logo.png" alt="Logo Empresa" class="chat-logo">
+                    <img src="http://desarrollo.iconcreta.com/static/img/logo.png" alt="Logo Empresa" class="chat-logo">
                 </a>
                 <button class="minimize-chat-btn">-</button>
                 <button class="toggle-chat-btn">Chat</button>                
@@ -111,7 +114,7 @@
                 messageInput.value = '';
                 messageInput.setAttribute('disabled', 'disabled');
 
-                fetch('/chatbot/chat/?message=' + encodeURIComponent(message))
+                fetch('http://desarrollo.iconcreta.com/chatbot/chat/?message=' + encodeURIComponent(message))
                     .then(response => response.json())
                     .then(data => {
                         appendMessage('bot', data.respuesta, data.respuesta.includes('href=') || data.respuesta.includes('<a '));

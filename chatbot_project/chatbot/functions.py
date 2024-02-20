@@ -20,6 +20,7 @@ def generate_openai_response(prompt):
         print(f"OpenAI response: {openai_response}")  
         return openai_response
     except Exception as e:
+        logger.error(f"Error al generar la respuesta de OpenAI: {e}")
         return f"Ocurrió un error al generar la respuesta: {str(e)}"
     
 def send_email(name, comuna, email, project, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos):
