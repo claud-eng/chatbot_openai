@@ -306,15 +306,18 @@ def chat(request):
                 correo_destinatario = next((item['correo'] for item in session_data['context'] if 'correo' in item), None)
 
                 if correo_destinatario and productos_aleatorios:
-                    # Generar el prompt para OpenAI
-                    prompt = f"Redacta un mensaje sólo limitándote a mencionar las características del producto, debes mencionarlos todos, no debes dar mensajes de bienvenida como Hola, tampoco des mensajes de despedida y/o menciones el nombre del cliente, sólo debes ser breve, preciso y amigable, el mensaje debe comenzar diciendo: Hola {primer_nombre} tenemos... "
-                    for producto in productos_aleatorios:
-                        prompt += f"- Nombre: {producto['Nombre']}, Precio: {producto['PrecioTotalUF']} UF, \n"
-                    prompt += "Debes terminar el mensaje con 'Muchas gracias por cotizar con nosotros'."
-                    # Obtener la respuesta de OpenAI
-                    contenido_correo = generate_openai_response(prompt)
-
-                    # Enviar el correo con el contenido generado
+                    # Iniciar el contenido del correo con un saludo y una introducción
+                    contenido_correo = f"Estimado/a {primer_nombre}, es un placer presentarte una selección exclusiva de propiedades que podrían ser de tu interés:<br><br>"
+                    
+                    # Iterar sobre los productos seleccionados, limitando a un máximo de 5
+                    for producto in productos_aleatorios[:5]:
+                        # Agregar cada producto al contenido del correo con un salto de línea HTML
+                        contenido_correo += f"- {producto['Nombre']} a un precio de {producto['PrecioTotalUF']} UF<br>"
+                    
+                    # Agregar el cierre después de listar los productos
+                    contenido_correo += "<br>Esperamos que estas opciones sean de tu agrado. Estamos a tu disposición para cualquier consulta o para ofrecerte más información. ¡Gracias por considerarnos en tu búsqueda de la propiedad perfecta!"
+                    
+                    # Enviar el correo con el contenido generado, asegurándose de que se envía como HTML
                     enviar_correo_con_seleccion(correo_destinatario, contenido_correo)
 
                 # Verifica si ya se ha proporcionado el número de teléfono

@@ -20,7 +20,6 @@ def generate_openai_response(prompt):
         print(f"OpenAI response: {openai_response}")  
         return openai_response
     except Exception as e:
-        logger.error(f"Error al generar la respuesta de OpenAI: {e}")
         return f"Ocurrió un error al generar la respuesta: {str(e)}"
     
 def send_email(name, comuna, email, project, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos):
@@ -35,9 +34,10 @@ def send_email(name, comuna, email, project, telefono, precio_texto_amigable, ti
     # Pluraliza correctamente "dormitorio" y "baño"
     dormitorio_texto = 'dormitorio' if dormitorios == '1' else 'dormitorios'
     bano_texto = 'baño' if banos == '1' else 'baños'
+    precio_texto_amigable_modificado = precio_texto_amigable[:-2].lower() + precio_texto_amigable[-2:].upper()
 
     # Formato del mensaje de comentarios
-    comentario = f'La persona cotizó {articulo} {tipo_inmueble}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto}.'
+    comentario = f'La persona cotizó {articulo} {tipo_inmueble} del proyecto {project}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto} a un precio {precio_texto_amigable_modificado}.'
 
     content = f'ORIGEN: ChatBot\nPROYECTO: {project}\nNOMBRE Y APELLIDO: {name}\nCOMUNA: {comuna}\nEMAIL: {email}\nTELEFONO: {telefono}\nPRECIO: {precio_texto_amigable}\nCOMENTARIO: {comentario}'
 

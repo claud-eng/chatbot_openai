@@ -8,7 +8,7 @@
     // Cargar estilos personalizados
     var customStylesLink = document.createElement('link');
     customStylesLink.rel = 'stylesheet';
-    customStylesLink.href = 'http://desarrollo.iconcreta.com/static/css/widget.css';
+    customStylesLink.href = 'https://desarrollo.iconcreta.com/static/css/widget.css';
     document.head.appendChild(customStylesLink);
 
     // Cargar jQuery
@@ -49,9 +49,9 @@
         // Agregar el HTML interno del widget de chat
         chatWidgetDiv.innerHTML = `
             <div class="chat-header">
-                <a href="https://iconcreta.com/" target="_blank" class="chat-logo-link">
-                    <img src="http://desarrollo.iconcreta.com/static/img/logo.png" alt="Logo Empresa" class="chat-logo">
-                </a>
+                <div class="chat-logo-text">
+                Desarrollado por <br><a href="https://iconcreta.com/" target="_blank">www.iconcreta.com</a>
+            </div>
                 <button class="minimize-chat-btn">-</button>
                 <button class="toggle-chat-btn">Chat</button>                
             </div>
@@ -100,7 +100,9 @@
                 minimizedIcon.style.display = 'flex'; // Asegura que el botón de maximizar se muestre cuando el chat se minimiza
             }
         }
-    
+
+        toggleChat(false); // Llamas directamente a la función con false para minimizar
+
         // Funciones para manipular el widget de chat
         function sendMessage(messageToSend = null, optionText = null) {
             var messageInput = chatWidgetDiv.querySelector('#messageInput');
@@ -114,7 +116,10 @@
                 messageInput.value = '';
                 messageInput.setAttribute('disabled', 'disabled');
 
-                fetch('http://desarrollo.iconcreta.com/chatbot/chat/?message=' + encodeURIComponent(message))
+                // Añade credentials: 'include' para asegurar que las cookies sean enviadas con la solicitud
+                fetch('https://desarrollo.iconcreta.com/chatbot/chat/?message=' + encodeURIComponent(message), {
+                    credentials: 'include'
+                })
                     .then(response => response.json())
                     .then(data => {
                         appendMessage('bot', data.respuesta, data.respuesta.includes('href=') || data.respuesta.includes('<a '));
