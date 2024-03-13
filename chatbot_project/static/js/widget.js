@@ -1,39 +1,10 @@
 (function () {
-    // Cargar Bootstrap CSS
-    var bootstrapLink = document.createElement('link');
-    bootstrapLink.rel = 'stylesheet';
-    bootstrapLink.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
-    document.head.appendChild(bootstrapLink);
 
     // Cargar estilos personalizados
     var customStylesLink = document.createElement('link');
     customStylesLink.rel = 'stylesheet';
-    customStylesLink.href = 'https://desarrollo.iconcreta.com/static/css/widget.css';
+    customStylesLink.href = '/static/css/widget.css';
     document.head.appendChild(customStylesLink);
-
-    // Cargar jQuery
-    var jqueryScript = document.createElement('script');
-    jqueryScript.src = 'https://code.jquery.com/jquery-3.5.1.slim.min.js';
-    document.head.appendChild(jqueryScript); // Modificado para cargar en el head
-
-    // Cargar Popper.js y Bootstrap JS solo después de que jQuery esté cargado
-    jqueryScript.onload = function () {
-        // Cargar Popper.js
-        var popperScript = document.createElement('script');
-        popperScript.src = 'https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js';
-        document.body.appendChild(popperScript);
-
-        // Cargar Bootstrap JS
-        var bootstrapScript = document.createElement('script');
-        bootstrapScript.src = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js';
-        document.body.appendChild(bootstrapScript);
-
-        // Esperar a que Popper.js esté cargado antes de inicializar el widget
-        bootstrapScript.onload = function () {
-            // Inicializar el widget aquí
-            initChatWidget();
-        };
-    };
 
     var isChatWidgetInitialized = false; // Controla si el widget ya fue inicializado
 
@@ -100,9 +71,9 @@
                 minimizedIcon.style.display = 'flex'; // Asegura que el botón de maximizar se muestre cuando el chat se minimiza
             }
         }
-
-        toggleChat(false); // Llamas directamente a la función con false para minimizar
-
+    
+        toggleChat(false); // Llama directamente a la función con false para minimizar
+        
         // Funciones para manipular el widget de chat
         function sendMessage(messageToSend = null, optionText = null) {
             var messageInput = chatWidgetDiv.querySelector('#messageInput');
@@ -116,8 +87,15 @@
                 messageInput.value = '';
                 messageInput.setAttribute('disabled', 'disabled');
 
-                // Añade credentials: 'include' para asegurar que las cookies sean enviadas con la solicitud
-                fetch('https://desarrollo.iconcreta.com/chatbot/chat/?message=' + encodeURIComponent(message), {
+                var chatSessionId = sessionStorage.getItem('chatSessionId');
+                if (!chatSessionId) {
+                    chatSessionId = generateUniqueId();
+                    sessionStorage.setItem('chatSessionId', chatSessionId);
+                }
+
+                var urlActual = window.location.href;
+
+                fetch(`https://desarrollo.iconcreta.com/chatbot/chat/?message=${encodeURIComponent(message)}&url=${encodeURIComponent(urlActual)}&chatSessionId=${chatSessionId}`, {
                     credentials: 'include'
                 })
                     .then(response => response.json())
@@ -133,6 +111,10 @@
                         messageInput.removeAttribute('disabled');
                     });
             }
+        }
+
+        function generateUniqueId() {
+            return Math.random().toString(36).substr(2, 9);
         }
 
         function handleBotOptions(options) {

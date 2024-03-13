@@ -7,6 +7,8 @@ from xml.etree import ElementTree
 import random
 import os 
 import unicodedata
+import json 
+from .rutas import *
 
 def generate_openai_response(prompt):
     try:
@@ -21,12 +23,42 @@ def generate_openai_response(prompt):
         return openai_response
     except Exception as e:
         return f"Ocurrió un error al generar la respuesta: {str(e)}"
-    
-def send_email(name, comuna, email, project, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos):
+
+def cargar_configuracion(ruta_archivo):
+    config = {}
+    try:
+        with open(ruta_archivo, 'r', encoding='utf-8') as archivo:  # Especifica la codificación UTF-8
+            for linea in archivo:
+                linea_limpia = linea.strip()
+                if linea_limpia.startswith('#') or not linea_limpia:
+                    continue  # Ignora comentarios o líneas vacías
+                clave, valor = linea_limpia.split('=', 1)
+                config[clave] = valor.strip()  # Elimina espacios en blanco adicionales alrededor del valor
+    except Exception as e:
+        print(f"Error al cargar la configuración: {e}")
+    return config
+
+def leer_configuracion(url_cliente):
+    ruta_configuracion = seleccionar_ruta_configuracion(url_cliente)
+    configuracion = {}
+    with open(ruta_configuracion, 'r', encoding='utf-8') as file:
+        for line in file:
+            if "=" in line:
+                key, value = line.strip().split('=', 1)
+                configuracion[key] = value.strip()  
+    return configuracion
+
+def send_email(name, comuna_corregida, email, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos, url_cliente):
+
+    # Seleccionar el archivo de configuración basado en la URL del cliente
+    ruta_config = seleccionar_ruta_configuracion(url_cliente)
+    config = cargar_configuracion(ruta_config)
+    proyecto_correo = config.get('PROYECTO_CORREO', 'Valor por defecto si no se encuentra PROYECTO_CORREO')
+
     sg = SendGridAPIClient(settings.EMAIL_HOST_PASSWORD)
     from_email = settings.DEFAULT_FROM_EMAIL
-    to_email = 'czamorano1995@gmail.com'  # Cambia esto al correo que desees
-    subject = 'Datos de contacto'
+    to_email = config.get('EMAIL_RECIPIENT')
+    subject = config.get('EMAIL_SUBJECT')
 
     # Determina el artículo adecuado para el tipo de inmueble
     articulo = 'un' if tipo_inmueble == 'departamento' else 'una'
@@ -37,9 +69,9 @@ def send_email(name, comuna, email, project, telefono, precio_texto_amigable, ti
     precio_texto_amigable_modificado = precio_texto_amigable[:-2].lower() + precio_texto_amigable[-2:].upper()
 
     # Formato del mensaje de comentarios
-    comentario = f'La persona cotizó {articulo} {tipo_inmueble} del proyecto {project}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto} a un precio {precio_texto_amigable_modificado}.'
+    comentario = f'La persona cotizó {articulo} {tipo_inmueble} del proyecto {proyecto_correo}, con {dormitorios} {dormitorio_texto} y {banos} {bano_texto} a un precio {precio_texto_amigable_modificado}.'
 
-    content = f'ORIGEN: ChatBot\nPROYECTO: {project}\nNOMBRE Y APELLIDO: {name}\nCOMUNA: {comuna}\nEMAIL: {email}\nTELEFONO: {telefono}\nPRECIO: {precio_texto_amigable}\nCOMENTARIO: {comentario}'
+    content = f'ORIGEN: ChatBot\nPROYECTO: {proyecto_correo}\nNOMBRE Y APELLIDO: {name}\nCOMUNA: {comuna_corregida}\nEMAIL: {email}\nTELEFONO: {telefono}\nPRECIO: {precio_texto_amigable}\nCOMENTARIO: {comentario}'
 
     message = Mail(from_email=from_email, to_emails=to_email, subject=subject, plain_text_content=content)
     try:
@@ -47,17 +79,23 @@ def send_email(name, comuna, email, project, telefono, precio_texto_amigable, ti
     except Exception as e:
         print(f"Error al enviar correo: {e}")
 
-def obtener_productos_activos(tipo_inmueble, rango_precio, dormitorios=None, banos=None, cantidad=0):
+def obtener_productos_activos(tipo_inmueble, rango_precio, url_cliente, dormitorios=None, banos=None, cantidad=0):
+
+    # Seleccionar el archivo de configuración basado en la URL del cliente
+    ruta_config = seleccionar_ruta_configuracion(url_cliente)
+    config = cargar_configuracion(ruta_config)
+
+    # Usar los valores de configuración en la solicitud
     url = "https://ws.iconcreta.com/Productos.asmx/ProductosActivos"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
     }
     data = {
-        "orgNombre": os.getenv('ORG_NOMBRE', 'default_value'),
-        "Dominio": os.getenv('DOMINIO', 'default_value'),
-        "Usuario": os.getenv('USUARIO', 'default_value'),
-        "Password": os.getenv('PASSWORD', 'default_value'),
-        "Proyecto": os.getenv('PROYECTO', ''),  # Dejar vacío según la documentación
+        "orgNombre": config['ORG_NOMBRE'],
+        "Dominio": config['DOMINIO'],
+        "Usuario": config['USUARIO'],
+        "Password": config['PASSWORD'],
+        "Proyecto": config['PROYECTO'],  
     }
     response = requests.post(url, data=data, headers=headers)
 
@@ -88,8 +126,10 @@ def obtener_productos_activos(tipo_inmueble, rango_precio, dormitorios=None, ban
                     'Nombre': nombre_producto,
                     'NumeroProducto': producto.find('NumeroProducto').text.strip(),
                     'PrecioTotalUF': precio_producto,
-                    'TipoInmueble': tipo_inmueble_producto
-                    # Aquí puedes añadir más campos si son necesarios
+                    'TipoInmueble': tipo_inmueble_producto,
+                    'Numero': producto.find('Numero').text.strip(),  
+                    'NombreProyecto': producto.find('NombreProyecto').text.strip() 
+                    # Añadir aquí más campos si son necesarios
                 }
                 productos.append(datos_producto)
             except Exception as e:
