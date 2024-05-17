@@ -350,26 +350,35 @@ def chat(request):
                 if correo_destinatario and productos_aleatorios:
                     # Leer la configuración personalizada
                     configuracion = leer_configuracion(url_cliente)
+                    max_productos = int(configuracion.get('MAX_PRODUCTOS'))
                     saludo_correo = configuracion.get('SALUDO_CORREO', 'Saludo por defecto').format(primer_nombre=primer_nombre)
                     cierre_correo = configuracion.get('CIERRE_CORREO', 'Cierre por defecto')
-                    max_productos = int(configuracion.get('MAX_PRODUCTOS'))
+                    template_name = configuracion.get('EMAIL_TEMPLATE', 'email_template.html')
 
-                    # Iniciar el contenido del correo con un saludo personalizado
-                    contenido_correo = f"{saludo_correo}<br><br>"
-    
-                    # Iterar sobre los productos seleccionados, limitando a un máximo de 5
+                    # Generar la lista de productos
+                    productos_html = ""
                     for producto in productos_aleatorios[:max_productos]:
                         numero_producto = producto.get('Numero', 'desconocido')
                         nombre_proyecto = producto.get('NombreProyecto', 'desconocido').lower()
                         tipo_texto = 'Departamento' if tipo_inmueble.lower() == 'departamento' else 'Casa' if tipo_inmueble.lower() == 'casa' else 'Inmueble'
 
-                        # Agregar cada producto al contenido del correo
-                        contenido_correo += f"- {tipo_texto} número {numero_producto} del proyecto {nombre_proyecto} a un precio de {producto['PrecioTotalUF']} UF<br>"
-    
-                    # Agregar el cierre personalizado después de listar los productos
-                    contenido_correo += f"<br>{cierre_correo}"
-    
-                    # Enviar el correo con el contenido generado, asegurándose de que se envía como HTML
+                        productos_html += f"<div class='producto'>{tipo_texto} número {numero_producto} del proyecto {nombre_proyecto} a un precio de {producto['PrecioTotalUF']} UF</div>"
+
+                    # Leer el contenido del archivo HTML
+                    template_path = os.path.join(settings.BASE_DIR, 'templates', template_name)
+                    try:
+                        with open(template_path, 'r', encoding='utf-8') as file:
+                            contenido_correo = file.read()
+                    except UnicodeDecodeError:
+                        with open(template_path, 'r', encoding='latin-1') as file:
+                            contenido_correo = file.read()
+
+                    # Reemplazar los marcadores de posición en el HTML
+                    contenido_correo = contenido_correo.replace('{{ saludo_correo }}', saludo_correo)
+                    contenido_correo = contenido_correo.replace('{{ productos_html }}', productos_html)
+                    contenido_correo = contenido_correo.replace('{{ cierre_correo }}', cierre_correo)
+
+                    # Enviar el correo con el contenido generado
                     enviar_correo_con_seleccion(correo_destinatario, contenido_correo, url_cliente)
 
                 # Verifica si ya se ha proporcionado el número de teléfono

@@ -3,7 +3,20 @@
     // Cargar estilos personalizados
     var customStylesLink = document.createElement('link');
     customStylesLink.rel = 'stylesheet';
-    customStylesLink.href = '/static/css/widget.css';
+    var currentUrl = window.location.href;
+    var url = new URL(currentUrl);
+    var domain = url.hostname;
+
+    if (domain.includes('probar.iconcreta.com')) {
+        customStylesLink.href = '/static/css/widget.css';
+    } else if (domain.includes('www.prueba.com')) {
+        customStylesLink.href = '/static/css/prueba.css';
+    } else if (domain.includes('www.test.cl')) {
+        customStylesLink.href = '/static/css/test.css';
+    } else {
+        customStylesLink.href = '/static/css/widget2.css'; // Archivo CSS por defecto
+    }
+
     document.head.appendChild(customStylesLink);
 
     var isChatWidgetInitialized = false; // Controla si el widget ya fue inicializado
@@ -95,7 +108,7 @@
 
                 var urlActual = window.location.href;
 
-                fetch(`https://desarrollo.iconcreta.com/chatbot/chat/?message=${encodeURIComponent(message)}&url=${encodeURIComponent(urlActual)}&chatSessionId=${chatSessionId}`, {
+                fetch(`/chatbot/chat/?message=${encodeURIComponent(message)}&url=${encodeURIComponent(urlActual)}&chatSessionId=${chatSessionId}`, {
                     credentials: 'include'
                 })
                     .then(response => response.json())

@@ -20,12 +20,13 @@ def enviar_correo_con_seleccion(correo_destinatario, contenido_correo, url_clien
     ruta_config = seleccionar_ruta_configuracion(url_cliente)
     config = cargar_configuracion(ruta_config)
     subject_asunto = config.get('EMAIL_SUBJECT_COTIZANTE')
+    from_email = config.get('DEFAULT_FROM_EMAIL')
 
     send_mail(
         subject_asunto,
-        '',
-        settings.DEFAULT_FROM_EMAIL,
+        '',  # El cuerpo del mensaje se envía vacío porque se usará `html_message`
+        from_email,
         [correo_destinatario],
         fail_silently=False,
-        html_message=contenido_correo
+        html_message=contenido_correo  # El contenido del correo como HTML
     )

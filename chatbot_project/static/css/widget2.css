@@ -1,0 +1,272 @@
+/* Estilos para el contenedor del logotipo y texto */
+.chat-logo-text {
+    text-align: center; /* Centra el texto */
+    color: white; /* Establece el color del texto a blanco */
+    margin: 8px 0; /* Aumenta el espacio superior e inferior para dar más altura */
+    font-style: italic;
+    flex: 1; /* Esto le permite crecer y llenar el espacio disponible */
+    margin-left: 0; /* Puede que no necesites un margen izquierdo */
+    order: 1; /* Asegura que el texto vaya antes del botón de minimizar */
+  }
+  
+  /* Estilos para el enlace dentro del texto del logotipo */
+  .chat-logo-text a {
+    color: white; /* Establece el color del enlace a blanco */
+    text-decoration: none; /* Elimina el subrayado del enlace */
+  }
+  
+  /* Cambiar el color del enlace al pasar el mouse */
+  .chat-logo-text a:hover {
+    color: #ADD8E6; 
+  }
+
+/* Estilos para el panel de encabezado del chatbot */
+.chat-header {
+    background-color: #0a63bd; /* Color de fondo del encabezado */
+    color: white; /* Color de texto del encabezado */
+    padding: 5px 10px; /* Reducir el espaciado dentro del encabezado */
+    border-top-left-radius: 8px; /* Redondeo de las esquinas superiores */
+    border-top-right-radius: 8px;
+    display: flex; /* Utiliza flexbox para alinear elementos */
+    justify-content: flex-start; /* Cambiado de space-between a flex-start */
+    align-items: center; /* Centra los elementos verticalmente */
+    position: relative; /* Posicionamiento relativo para los elementos absolutos dentro */
+}
+
+/* Botón para minimizar el chatbot */
+.minimize-chat-btn {
+    background-color: white; /* Cambia el color de fondo a blanco */
+    color: black; /* Cambia el color del texto/signo a negro */
+    border: 2px solid black; 
+    border-radius: 50%; /* Mantiene la forma circular */
+    cursor: pointer; /* Mantiene el cursor como una mano para indicar que es un botón */
+    padding: 5px; /* Ajusta el espaciado interno según sea necesario */
+    font-size: 16px; /* Ajusta el tamaño del texto/signo */
+    width: 30px; /* Ajusta el ancho para un tamaño específico */
+    height: 30px; /* Ajusta la altura para un tamaño específico */
+    display: flex; /* Utiliza flexbox para centrar el contenido */
+    justify-content: center; /* Centra horizontalmente el contenido */
+    align-items: center; /* Centra verticalmente el contenido */
+    margin-left: 10px; /* Agrega un margen izquierdo para mantener espacio entre el logo y el botón */
+    order: 2; /* Asegura que el botón esté a la derecha con flexbox */
+    position: absolute;
+    right: 25px; /* Coloca el botón a la derecha del encabezado */
+    top: 50%;
+    transform: translateY(-50%); /* Centra el botón verticalmente */
+}
+
+/* Ajusta el estilo del botón de alternar cuando el chatbot está abierto */
+.toggle-chat-btn {
+    order: 3; /* Asegura que el botón esté a la izquierda con flexbox */
+}
+
+/* Estilos cuando el chatbot está abierto */
+.chat-widget.open {
+    opacity: 1;
+    transform: scale(1);
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Estilos cuando el chatbot está minimizado */
+.chat-widget.minimized {
+    opacity: 1;
+    transform: scale(0);
+}
+
+/* Añade estilos para un botón o ícono que será visible cuando el chatbot esté minimizado */
+.minimized-icon {
+    display: none; /* Inicialmente oculto */
+    position: fixed;
+    bottom: 20px;
+    left: 20px; 
+    background-color: #0a63bd; 
+    color: white; /* Color del texto */
+    border-radius: 50%; /* Hace que sea circular */
+    width: 50px;
+    height: 50px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    line-height: 50px; /* Centra el texto en la línea */
+    cursor: pointer;
+    z-index: 1010; 
+    font-size: 24px; /* Tamaño del texto o ícono */
+}
+
+.chat-widget.minimized .minimized-icon {
+    display: flex; /* Se muestra como flex para centrar el contenido */
+}
+
+/* Estilos para la ventana de chat y el botón de alternancia */
+.chat-widget {
+    position: fixed; 
+    bottom: 20px;
+    left: 20px; /* Cambiado de right: 20px a left: 20px */
+    width: 400px;
+    height: 550px; /* Altura fija del widget de chat */
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; 
+    overflow: hidden; 
+    transform: scale(1); /* El widget es visible */
+}
+
+/* Botón para abrir/cerrar el chatbot */
+.toggle-chat-btn {
+    background-color: #0a63bd;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: absolute;
+    top: -50px; 
+    left: 0; /* Cambiado de right: 0 a left: 0 */
+}
+
+/* Contenedor principal del chat */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; 
+    background-color: white; 
+    padding-top: 0px;
+    padding-bottom: 70px; /* Espacio para la barra de entrada de mensajes */
+}
+
+/* Caja donde se muestran los mensajes */
+#chatBox {
+    overflow-y: auto; /* Habilita la barra de desplazamiento */
+    flex-grow: 1;
+    padding: 10px;
+    margin-bottom: 0px; 
+}
+
+/* Panel para mostrar las opciones de respuesta */
+#optionsPanel {
+    padding: 10px;
+    border-top: 1px solid #dee2e6; 
+    overflow-y: auto; /* Permite desplazamiento si hay más opciones de las que pueden caber en el espacio visible */
+    margin-bottom: 60px; /* Espacio para la barra de entrada de mensajes */
+}
+
+/* Mensajes del usuario y del bot */
+.message {
+    padding: 5px 10px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #0a63bd;
+    color: white;
+    align-self: flex-end;
+    margin-left: 150px; 
+    margin-right: 10px; /* Espacio a la derecha del mensaje */
+    max-width: calc(100% - 60px); 
+}
+
+.bot-message {
+    background-color: #f8f9fa;
+    align-self: flex-start;
+    margin-left: 10px; 
+}
+
+/* Botón de enviar ajustado con el nuevo color */
+.btn-primary {
+    background-color: #0a63bd; /* Color de fondo del botón */
+    border-color: #0a63bd; /* Color del borde del botón */
+}
+
+/* Botones de las opciones */
+.option-button {
+    background-color: #fff;
+    color: #0a63bd;
+    border: 1px solid #0a63bd;
+    padding: 10px 15px; /* Aumentar el padding para mejor visualización */
+    margin: 5px 10px 5px 0; /* Margen superior e inferior de 5px y margen derecho de 10px */
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    display: block; /* Hace que cada botón sea un bloque y ocupe su propia fila */
+    width: calc(100% - 20px); /* Ajusta el ancho al 100% menos los márgenes laterales */
+    box-sizing: border-box; /* Asegura que el padding y el borde se incluyan en el ancho total */
+}
+
+.option-button:hover {
+    background-color: #0a63bd;
+    color: white;
+}
+
+/* Para que el widget se 'expanda' cuando esté abierto */
+.chat-widget.open {
+    transform: scale(1);
+}
+
+.input-group {
+    width: calc(100% - 20px); /* Ajusta el ancho al padding del chatBox */
+    padding: 10px;
+    position: absolute;
+    bottom: 0;
+    left: 10px; /* Alinea con el padding del chatBox */
+}
+
+/* Para tablets y dispositivos más grandes, pero menores que una pantalla de escritorio */
+@media (max-height: 950px) {
+    .chat-widget {
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
+        left: 10%; /* Cambiado de right: 10% a left: 10% */
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
+    }
+}
+
+/* Para tablets y dispositivos más grandes, pero menores que una pantalla de escritorio */
+@media (max-width: 768px) {
+    .chat-widget {
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
+        left: 10%; /* Cambiado de right: 10% a left: 10% */
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
+    }
+}
+  
+/* Para dispositivos móviles en orientación retrato */
+@media (max-width: 480px) and (orientation: portrait) {
+    .chat-widget {
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
+        left: 10%; /* Cambiado de right: 10% a left: 10% */
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
+    }
+}
+  
+/* Para dispositivos móviles en orientación paisaje */
+@media (max-width: 480px) and (orientation: landscape) {
+    .chat-widget {
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
+        left: 10%; /* Cambiado de right: 10% a left: 10% */
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
+    }
+}
+  
+/* Nueva media query para dispositivos móviles en orientación paisaje con ancho entre 481px y un límite superior, por ejemplo, 1024px */
+@media (min-width: 481px) and (max-width: 1024px) and (orientation: landscape) {
+    .chat-widget {
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
+        left: 10%; /* Cambiado de right: 10% a left: 10% */
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
+    }
+}

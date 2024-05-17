@@ -29,10 +29,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-hcaz7$&y7!tz(8p($%*xn^6^^(9&8lk&)n_o09d&4zd)b_(5)x'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
+
 
 # Application definition
 
@@ -92,17 +93,15 @@ SESSION_COOKIE_SECURE = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DATABASE_DEFAULT_ENGINE'),
-        'NAME': os.getenv('DATABASE_DEFAULT_NAME'),
-        'HOST': os.getenv('DATABASE_DEFAULT_HOST'),
-        'PORT': os.getenv('DATABASE_DEFAULT_PORT'),
-        'OPTIONS': {
-            'driver': os.getenv('DATABASE_DEFAULT_OPTIONS_DRIVER'),
-            'extra_params': os.getenv('DATABASE_DEFAULT_OPTIONS_EXTRA_PARAMS'),
-        },
-    }
-}
+	        'default': {
+	            'ENGINE': 'django.db.backends.mysql',
+	            'NAME': 'db_openai',
+	            'USER': 'claud',
+	            'PASSWORD': 'admin',
+	            'HOST': 'localhost',
+	            'PORT': '3307',
+	        }
+	    }
 
 
 # Password validation
