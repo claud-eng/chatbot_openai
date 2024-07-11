@@ -75,22 +75,22 @@
 
 /* Añade estilos para un botón o ícono que será visible cuando el chatbot esté minimizado */
 .minimized-icon {
-    display: none; 
+    display: none; /* Inicialmente oculto */
     position: fixed;
     bottom: 20px;
-    left: 20px; /* Cambiado de right: 20px a left: 20px */
+    left: 20px; 
     background-color: #0a63bd; 
-    color: white; 
-    border-radius: 50%; 
+    color: white; /* Color del texto */
+    border-radius: 50%; /* Hace que sea circular */
     width: 50px;
     height: 50px;
     justify-content: center;
     align-items: center;
     text-align: center;
-    line-height: 50px; 
+    line-height: 50px; /* Centra el texto en la línea */
     cursor: pointer;
     z-index: 1010; 
-    font-size: 24px; 
+    font-size: 24px; /* Tamaño del texto o ícono */
 }
 
 .chat-widget.minimized .minimized-icon {
@@ -99,10 +99,11 @@
 
 /* Estilos para la ventana de chat y el botón de alternancia */
 .chat-widget {
+    position: fixed; 
     bottom: 20px;
     left: 20px; /* Cambiado de right: 20px a left: 20px */
     width: 400px;
-    height: 550px; 
+    height: 550px; /* Altura fija del widget de chat */
     z-index: 1000;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     border-radius: 8px;
@@ -110,7 +111,7 @@
     flex-direction: column;
     justify-content: flex-end; 
     overflow: hidden; 
-    transform: scale(1); 
+    transform: scale(1); /* El widget es visible */
 }
 
 /* Botón para abrir/cerrar el chatbot */
@@ -215,52 +216,57 @@
     left: 10px; /* Alinea con el padding del chatBox */
 }
 
+/* Para tablets y dispositivos más grandes, pero menores que una pantalla de escritorio */
 @media (max-height: 950px) {
     .chat-widget {
-        width: 80vw; 
-        height: 80vh; 
-        bottom: 10%; 
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
         left: 10%; /* Cambiado de right: 10% a left: 10% */
-        transform: translate(-10%, -10%); 
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
     }
 }
 
+/* Para tablets y dispositivos más grandes, pero menores que una pantalla de escritorio */
 @media (max-width: 768px) {
     .chat-widget {
-        width: 80vw; 
-        height: 80vh; 
-        bottom: 10%; 
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
         left: 10%; /* Cambiado de right: 10% a left: 10% */
-        transform: translate(-10%, -10%); 
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
     }
 }
-
+  
+/* Para dispositivos móviles en orientación retrato */
 @media (max-width: 480px) and (orientation: portrait) {
     .chat-widget {
-        width: 80vw; 
-        height: 80vh; 
-        bottom: 10%; 
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
         left: 10%; /* Cambiado de right: 10% a left: 10% */
-        transform: translate(-10%, -10%); 
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
     }
 }
-
+  
+/* Para dispositivos móviles en orientación paisaje */
 @media (max-width: 480px) and (orientation: landscape) {
     .chat-widget {
-        width: 80vw; 
-        height: 80vh; 
-        bottom: 10%; 
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
         left: 10%; /* Cambiado de right: 10% a left: 10% */
-        transform: translate(-10%, -10%); 
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
     }
 }
-
+  
+/* Nueva media query para dispositivos móviles en orientación paisaje con ancho entre 481px y un límite superior, por ejemplo, 1024px */
 @media (min-width: 481px) and (max-width: 1024px) and (orientation: landscape) {
     .chat-widget {
-        width: 80vw; 
-        height: 80vh; 
-        bottom: 10%; 
+        width: 80vw; /* 80% del ancho de la ventana */
+        height: 80vh; /* 80% del alto de la ventana */
+        bottom: 10%; /* Centrado vertical */
         left: 10%; /* Cambiado de right: 10% a left: 10% */
-        transform: translate(-10%, -10%); 
+        transform: translate(-10%, -10%); /* Ajuste para centrar */
     }
 }

@@ -16,10 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from chatbot.views import chat_view
+from chatbot.views import chatbot_index
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('chatbot/', include('chatbot.urls')),  # Incluye las URL de tu aplicación chatbot
-    path('', chat_view, name='home'),  # Asigna la vista chat_view a la URL raíz
+    path('', chatbot_index, name='home'),  # Asigna la vista chat_view a la URL raíz
 ]

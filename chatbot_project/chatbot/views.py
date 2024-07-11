@@ -1,46 +1,49 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.conf import settings
-import json
-import os 
 from .rutas import *
 from .functions import *
 from .validators import *
-
-def cargar_comunas():
-    # Ruta al archivo comunas.jsonl
-    jsonl_path = os.path.join(settings.BASE_DIR, 'chatbot/comunas.jsonl')
-    comunas = {}
-    with open(jsonl_path, 'r', encoding='utf-8') as file:  # Especificar la codificación aquí
-        for line in file:
-            comuna = json.loads(line)
-            comunas[comuna["Comuna Oficial"]] = True
-    return comunas
+from .opciones_proyectos import * 
+from .preguntas_variadas import obtener_pregunta
 
 # Esta variable se inicializará en la primera solicitud HTTP que se procese
 comunas_chile = None
 
-def chat(request):
+# Función correspondiente al flujo del chatbot para cotizar departamentos y casas
+def flujo_dptos_casas(request):
     chat_session_id = request.GET.get('chatSessionId', '')
     
     if not chat_session_id:
-        # Manejar el caso de que no haya chatSessionId proporcionado
         return JsonResponse({'error': 'No chat session ID provided'}, status=400)
 
     session_key = f"chat_data_{chat_session_id}"
     session_data = request.session.get(session_key, {'state': 'inicio', 'context': []})
 
     url_cliente = request.GET.get('url', '')
-    configuracion = leer_configuracion(url_cliente)
 
+    # Corrige las comunas ingresadas por el usuario sin la letra ñ
+    correcciones = {
+        "nunoa": "Ñuñoa",
+        "penalolen": "Peñalolen",
+        "penaflor": "Peñaflor",
+        "rio ibanez": "Rio Ibañez",
+        "canete": "Cañete",
+        "niquen": "Ñiquen",
+        "hualane": "Hualañe",
+        "donihue": "Doñihue",
+        "vina de mar": "Viña del Mar",
+        "vicuna": "Vicuña",
+        "chanaral": "Chañaral",
+        "camina": "Camiña",
+    }
+    
     global comunas_chile
-    # Cargar comunas si aún no se han cargado
     if comunas_chile is None:
         comunas_chile = cargar_comunas()
 
     user_message = request.GET.get('message', '').strip().lower()
-    
-    # Mapeo de los valores a texto amigable
+
     precio_a_texto = {
         'menos_1800': 'Menos de 1800 UF',
         'entre_1800_2499': 'Entre 1800 y 2499 UF',
@@ -49,8 +52,8 @@ def chat(request):
         'mas_7000': 'Más de 7000 UF'
     }
 
-    # Obtener el rango de precio en texto amigable
-    precio_texto_amigable = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
+    # Parsea el rango de precio a texto
+    convertir_rango_precio_a_texto = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
 
     if 'context' not in session_data:
         session_data['context'] = []
@@ -58,25 +61,27 @@ def chat(request):
     response = ''
     options = []
 
-    # Verificar si el usuario viene de hacer un reclamo o de finalizar cotización
     from_reclamo = session_data.get('from_reclamo', False)
     from_cotizacion = session_data.get('from_cotizacion', False)
 
-    # Reiniciar las banderas para futuras interacciones.
     session_data['from_reclamo'] = False
     session_data['from_cotizacion'] = False
 
-    # Verificar si el mensaje es 'inicio' y si viene de alguno de los flujos anteriores.
     if user_message == 'inicio':
-        # Esto reinicia completamente la sesión para un nuevo usuario
-        session_data.clear()  # Esto eliminará todos los datos existentes en la sesión
+        session_data.clear()
         session_data['state'] = 'inicio'
         session_data['context'] = []
-        session_data['ha_dado_telefono'] = False  
+        session_data['ha_dado_telefono'] = False
+        
+        ruta_archivo_configuracion = seleccionar_ruta_configuracion(url_cliente)
+        configuracion = leer_archivo_configuracion(ruta_archivo=ruta_archivo_configuracion)
+        respuesta_inicial = configuracion.get('RESPUESTA_INICIAL', 'Hola, soy un Asistente Virtual, ¿En qué puedo ayudarte?')
+        
         if from_reclamo or from_cotizacion:
             response = 'Hola nuevamente, ¿En qué puedo ayudarte esta vez?'
         else:
-            response = 'Hola, soy un Asistente Virtual, ¿En qué puedo ayudarte?'
+            response = respuesta_inicial
+        
         session_data['state'] = 'inicio'
         options = [
             {'text': 'Necesito ayuda para cotizar', 'value': 'cotizar'},
@@ -85,30 +90,79 @@ def chat(request):
 
     elif session_data['state'] == 'inicio':
         if 'cotizar' in user_message:
-            session_data['state'] = 'solicitando_nombre'
-            response = '¡Gracias por tu interés en nuestro proyecto! Para una atención más personalizada, ¿Podrías indicarme tu nombre por favor?'
+            options = obtener_opciones_proyectos(url_cliente)
+            session_data['state'] = 'seleccionando_proyecto'
+            response = '¿En cuál proyecto deseas cotizar?'
         elif 'reclamo' in user_message:
-            session_data['state'] = 'inicio'  # Reiniciamos la conversación
-            session_data['from_reclamo'] = True  # Marcamos que viene de hacer un reclamo
-            response = configuracion.get('RESPUESTA_RECLAMO')
+            ruta_archivo_configuracion = seleccionar_ruta_configuracion(url_cliente)
+            configuracion = leer_archivo_configuracion(ruta_archivo=ruta_archivo_configuracion)
+            session_data['state'] = 'inicio'
+            session_data['from_reclamo'] = True
+            response = configuracion.get('RESPUESTA_RECLAMO', 'No se encontró una respuesta para reclamos.')
             options = [
                 {'text': 'Continuar', 'value': 'inicio'}
             ]
 
+    elif session_data['state'] == 'seleccionando_proyecto':
+        proyecto_seleccionado = user_message  # Actualiza el proyecto seleccionado con el mensaje del usuario
+        print(f"Proyecto seleccionado: {proyecto_seleccionado}")  # Depuración
+
+        ruta_archivo_configuracion = seleccionar_ruta_configuracion(url_cliente, proyecto_seleccionado)
+        print(f"Ruta archivo configuración: {ruta_archivo_configuracion}")  # Depuración
+
+        parametros_archivo_configuracion = leer_archivo_configuracion(ruta_archivo=ruta_archivo_configuracion)  # Pasamos ruta_archivo_configuracion como ruta_archivo
+
+        print(f"Parámetros archivo configuración cargados: {parametros_archivo_configuracion}")  # Depuración
+
+        session_data['context'].append({'config': parametros_archivo_configuracion, 'proyecto': proyecto_seleccionado})
+
+        productos = obtener_productos_activos(url_cliente, proyecto_seleccionado)
+        
+        if productos:
+            session_data['context'].append({'todos_los_productos': productos})
+
+            nombre_completo = next((item['nombre_completo'] for item in session_data['context'] if 'nombre_completo' in item), None)
+            comuna = next((item['comuna'] for item in session_data['context'] if 'comuna' in item), None)
+            correo = next((item['correo'] for item in session_data['context'] if 'correo' in item), None)
+
+            if not nombre_completo:
+                session_data['state'] = 'solicitando_nombre'
+                response = obtener_pregunta('nombre')
+            elif not comuna:
+                session_data['state'] = 'solicitando_comuna'
+                primer_nombre = extraer_primer_nombre(nombre_completo) if nombre_completo else "cliente"
+                response = obtener_pregunta('comuna', primer_nombre=primer_nombre)
+            elif not correo:
+                session_data['state'] = 'solicitando_correo'
+                primer_nombre = extraer_primer_nombre(nombre_completo) if nombre_completo else "cliente"
+                response = obtener_pregunta('correo', primer_nombre=primer_nombre)
+            else:
+                session_data['state'] = 'solicitando_tipo_inmueble'
+                primer_nombre = extraer_primer_nombre(nombre_completo) if nombre_completo else "cliente"
+                response = obtener_pregunta('tipo_inmueble', primer_nombre=primer_nombre)
+                options = [
+                    {'text': 'Departamento', 'value': 'departamento'},
+                    {'text': 'Casa', 'value': 'casa'}
+                ]
+        else:
+            response = 'Lo siento, no encontramos productos disponibles para el proyecto seleccionado. ¿Deseas intentar con otro proyecto?'
+            session_data['state'] = 'inicio'
+            options = [
+                {'text': 'Sí, intentar con otro proyecto', 'value': 'cotizar'},
+                {'text': 'No, gracias', 'value': 'inicio'}
+            ]
+            
     elif session_data['state'] == 'solicitando_nombre':
-        if is_potential_name(user_message):
-            # Utiliza OpenAI para interpretar la intención completa
-            prompt = f"El usuario dijo: '{user_message}'. Teniendo en cuenta que el usuario puede incluir agradecimientos o frases adicionales antes y/o después de dar su nombre (recordar que es opcional), el usuario en la frase que ha dicho, ¿En alguna parte menciona su nombre? responde si o no (tener en cuenta de que algunas personas de manera opcional puede que ingresen sus dos nombres y dos apellidos). Sólo es obligatorio ingresar el primer nombre"
-            response_openai = generate_openai_response(prompt)
+        if es_nombre_potencial(user_message):
+            prompt_validar_nombre = f"El usuario dijo: '{user_message}'. Teniendo en cuenta que el usuario puede incluir agradecimientos o frases adicionales antes y/o después de dar su nombre (recordar que es opcional), el usuario en la frase que ha dicho, ¿En alguna parte menciona su nombre? responde si o no (tener en cuenta de que algunas personas de manera opcional puede que ingresen sus dos nombres y dos apellidos). Sólo es obligatorio ingresar el primer nombre"
+            response_openai = llamar_openai(prompt_validar_nombre)
             if "sí" in response_openai.lower():
-                # Prompt para extraer el nombre completo (nombre y apellido) del mensaje
-                prompt_extraccion = f"Extrae el nombre completo (nombre y apellido) del siguiente texto: '{user_message}' (En caso de sólo haber un nombre sólo extrae eso, ya que el segundo nombre y los apellidos son opcionales)."
-                nombre_completo = generate_openai_response(prompt_extraccion).strip()
-                # Utiliza la función extraer_primer_nombre para obtener solo el primer nombre
+                prompt_extraer_nombre = f"Extrae el nombre completo (nombre y apellido) del siguiente texto: '{user_message}' (En caso de sólo haber un nombre sólo extrae eso, ya que el segundo nombre y los apellidos son opcionales)."
+                nombre_completo = llamar_openai(prompt_extraer_nombre).strip()
                 primer_nombre = extraer_primer_nombre(nombre_completo)
                 session_data['context'].append({'nombre_completo': nombre_completo, 'primer_nombre': primer_nombre})
                 session_data['state'] = 'solicitando_comuna'
-                response = f'Gracias {primer_nombre}, ¿En qué comuna estás interesado en cotizar? Por favor sólo ingresa el nombre de una comuna.'
+                response = obtener_pregunta('comuna', primer_nombre=primer_nombre)
             else:
                 response = 'Parece que no has ingresado tu nombre de manera válida. Por favor, intenta nuevamente ingresando al menos tu primer nombre.'
         else:
@@ -118,7 +172,7 @@ def chat(request):
         # Normaliza y capitaliza la entrada del usuario
         comuna_usuario = capitalizar_comuna(quitar_acentos(user_message))
 
-        # Chequear si el usuario ingresó una variante de Santiago Centro
+        # Verifica si el usuario ingresó una variante de Santiago Centro
         if "santiago centro" in comuna_usuario.lower():
             comuna_usuario = "Santiago"
 
@@ -139,14 +193,13 @@ def chat(request):
                     primer_nombre = item['primer_nombre']
                     break
             
-            response = f'Genial {primer_nombre}, ¿qué tipo de inmueble estás buscando?' if primer_nombre else 'Genial, ¿qué tipo de inmueble estás buscando?'
+            response = obtener_pregunta('tipo_inmueble', primer_nombre=primer_nombre) if primer_nombre else 'Genial, ¿qué tipo de inmueble estás buscando?'
             options = [
                 {'text': 'Departamento', 'value': 'departamento'},
                 {'text': 'Casa', 'value': 'casa'}
             ]
         else:
             response = 'No he podido identificar una comuna válida en tu respuesta. Por favor, intenta ingresando el nombre de una comuna en Chile como Las Condes, Providencia o La Florida, etc.'
-
 
     elif session_data['state'] == 'solicitando_tipo_inmueble':
         session_data['context'].append({'tipo_inmueble': user_message})
@@ -158,9 +211,12 @@ def chat(request):
             {'text': 'Entre 4000 y 6999 UF', 'value': 'entre_4000_6999'},
             {'text': 'Más de 7000 UF', 'value': 'mas_7000'},
         ]
-        response = 'Muy bien, ¿En qué rango de precios estás interesado?'
+        response = obtener_pregunta('rango_precios')
 
     elif session_data['state'] == 'solicitando_rango_precio':
+        # Eliminar cualquier entrada previa de rango_precio para evitar conflictos
+        session_data['context'] = [item for item in session_data['context'] if 'rango_precio' not in item]
+        
         session_data['context'].append({'rango_precio': user_message})
 
         # Extraer el primer nombre del contexto para personalizar la respuesta
@@ -186,25 +242,27 @@ def chat(request):
                 {'text': '4 dormitorios', 'value': '4'},
                 {'text': 'Más de 4 dormitorios', 'value': '5+'},
             ]
-            response = f"Perfecto, {primer_nombre}, ¿Cuántos dormitorios necesitas?"
+            response = obtener_pregunta('dormitorios', primer_nombre=primer_nombre)
         else:
             # Solicitar el correo en una nueva cotización
             session_data['state'] = 'solicitando_correo'
-            response = f"Excelente {primer_nombre}, antes de continuar, ¿podrías proporcionarme tu correo electrónico para enviarte información detallada sobre tu cotización?"
+            response = obtener_pregunta('correo', primer_nombre=primer_nombre)
             options = []
 
     elif session_data['state'] == 'solicitando_correo':
+        primer_nombre = next((item['primer_nombre'] for item in session_data['context'] if 'primer_nombre' in item), "cliente")
+        
         # Verifica si el mensaje del usuario contiene un correo electrónico
         prompt_verificar_correo = f"El usuario dijo: '{user_message}'. ¿Contiene esto una dirección de correo electrónico válida? Responde 'sí' o 'no'."
-        respuesta_verificar_correo = generate_openai_response(prompt_verificar_correo)
+        respuesta_verificar_correo = llamar_openai(prompt_verificar_correo)
         
         if "sí" in respuesta_verificar_correo.lower():
             # Si hay un correo, intenta extraerlo
             prompt_extraer_correo = f"Extrae la dirección de correo electrónico del siguiente mensaje del usuario: '{user_message}'."
-            correo_extraido = generate_openai_response(prompt_extraer_correo).strip()
+            correo_extraido = llamar_openai(prompt_extraer_correo).strip()
             
             # Valida el correo extraído
-            if validate_email(correo_extraido):
+            if validar_correo(correo_extraido):
                 # Si el correo es válido, continúa con el flujo
                 session_data['context'].append({'correo': correo_extraido})
                 session_data['state'] = 'solicitando_dormitorios'
@@ -215,13 +273,13 @@ def chat(request):
                     {'text': '4 dormitorios', 'value': '4'},
                     {'text': 'Más de 4 dormitorios', 'value': '5+'},
                 ]
-                response = '¡Gracias! ¿Cuántos dormitorios necesitas?'
+                response = obtener_pregunta('dormitorios', primer_nombre=primer_nombre)
             else:
                 # Si OpenAI proporciona una cadena que no es un correo válido, solicita que se ingrese de nuevo
-                response = 'El correo proporcionado no parece ser válido. Por favor, ingresa un correo electrónico válido.'
+                response = obtener_pregunta('correo_invalido')
         else:
             # Si OpenAI indica que no hay un correo, solicita que se ingrese de nuevo
-            response = 'No he detectado un correo electrónico en tu mensaje. Por favor, ingresa tu correo electrónico para continuar.'
+            response = obtener_pregunta('correo_no_detectado')
 
     elif session_data['state'] == 'solicitando_dormitorios':
         # Asume que 'user_message' contiene la cantidad de dormitorios, por ejemplo, "2 dormitorios"
@@ -234,7 +292,7 @@ def chat(request):
             {'text': '3 baños', 'value': '3'},
             {'text': '4 o más baños', 'value': '4+'},
         ]
-        response = '¿Cuántos baños prefieres?'
+        response = obtener_pregunta('banos')
 
     elif session_data['state'] == 'solicitando_banos':
         print("Estado actual: solicitando_banos")  # Depuración
@@ -254,7 +312,7 @@ def chat(request):
         session_data['context'].append({'banos': cantidad_banos})
 
         # Inicializa variables para almacenar los valores necesarios
-        tipo_inmueble = rango_precio = dormitorios = banos = None
+        tipo_inmueble = rango_precio = dormitorios = banos = proyecto = None
 
         # Itera sobre el contexto para extraer los valores necesarios
         for item in session_data['context']:
@@ -266,10 +324,35 @@ def chat(request):
                 dormitorios = item['dormitorios']
             elif 'banos' in item:
                 banos = item['banos']
+            elif 'proyecto' in item:
+                proyecto = item['proyecto']
 
         # Verifica que todos los valores necesarios estén presentes
-        if all(value is not None for value in [tipo_inmueble, rango_precio, url_cliente, dormitorios, banos]):
-            productos = obtener_productos_activos(tipo_inmueble, rango_precio, url_cliente, dormitorios, banos)
+        if all(value is not None for value in [tipo_inmueble, rango_precio, url_cliente, dormitorios, banos, proyecto]):
+            todos_los_productos = next((item['todos_los_productos'] for item in session_data['context'] if 'todos_los_productos' in item), [])
+            try:
+                if dormitorios == '5+':
+                    productos = [producto for producto in todos_los_productos if (producto['TipoInmueble'].lower() == tipo_inmueble) and (int(producto['Dormitorios']) > 4) and (int(producto['Banos']) == int(banos))]
+                elif banos == '4+':
+                    productos = [producto for producto in todos_los_productos if (producto['TipoInmueble'].lower() == tipo_inmueble) and (int(producto['Dormitorios']) == int(dormitorios)) and (int(producto['Banos']) > 3)]
+                else:
+                    productos = [
+                        producto for producto in todos_los_productos
+                        if (producto['TipoInmueble'].lower() == tipo_inmueble) and
+                        (int(producto['Dormitorios']) == int(dormitorios)) and
+                        (int(producto['Banos']) == int(banos))
+                    ]
+            except ValueError as e:
+                # Maneja el error de conversión de valores a enteros
+                response = "Ha ocurrido un error al procesar tu solicitud. Por favor, verifica los datos ingresados y vuelve a intentarlo."
+                session_data['state'] = 'solicitando_banos'
+                options = [
+                    {'text': '1 baño', 'value': '1'},
+                    {'text': '2 baños', 'value': '2'},
+                    {'text': '3 baños', 'value': '3'},
+                    {'text': '4 o más baños', 'value': '4+'},
+                ]
+                return JsonResponse({'respuesta': response, 'options': options})
 
             # Decide qué hacer con los productos obtenidos
             producto_destacado = obtener_producto_mas_barato(productos) if productos else None
@@ -283,37 +366,22 @@ def chat(request):
                     nombre_completo = next((item['nombre_completo'] for item in session_data['context'] if 'nombre_completo' in item), "Desconocido")
                     comuna = next((item['comuna'] for item in session_data['context'] if 'comuna' in item), "Desconocida")
 
-                    # Correcciones condicionales para las comunas
-                    correcciones = {
-                        "nunoa": "Ñuñoa",
-                        "penalolen": "Peñalolén",
-                        "penaflor": "Peñaflor",
-                        "rio ibanez": "Río Ibáñez",
-                        "canete": "Cañete",
-                        "niquen": "Ñiquén",
-                        "hualane": "Hualañé",
-                        "donihue": "Doñihue",
-                        "vina de mar": "Viña del Mar",
-                        "vicuna": "Vicuña",
-                        "chanaral": "Chañaral",
-                        "camina": "Camiña",
-                    }
-
                     # Aplicar la corrección si el nombre de la comuna necesita ser ajustado
                     comuna_corregida = correcciones.get(comuna.lower(), comuna)
                     correo = next((item['correo'] for item in session_data['context'] if 'correo' in item), "Desconocido")
                     telefono = next((item['telefono'] for item in session_data['context'] if 'telefono' in item), "")
-                    precio_texto_amigable = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
+                    convertir_rango_precio_a_texto = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
                     tipo_inmueble = next((item['tipo_inmueble'] for item in session_data['context'] if 'tipo_inmueble' in item), "Desconocido")
                     dormitorios = next((item['dormitorios'] for item in session_data['context'] if 'dormitorios' in item), "Desconocido")
                     banos = next((item['banos'] for item in session_data['context'] if 'banos' in item), "Desconocido")
+                    proyecto = next((item['proyecto'] for item in session_data['context'] if 'proyecto' in item), "Desconocido")
                     
-                    # Llamar a send_email
-                    send_email(nombre_completo, comuna_corregida, correo, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos, url_cliente)
+                    # Enviar correo a Iconcreta para procesar al cotizante y subirlo al CRM
+                    enviar_correo_iconcreta(nombre_completo, comuna_corregida, correo, telefono, convertir_rango_precio_a_texto, tipo_inmueble, dormitorios, banos, url_cliente, proyecto)
 
                 # Determina el tipo de inmueble para el mensaje, basado en la elección del usuario
                 tipo_inmueble_texto = "Departamento" if tipo_inmueble.lower() == "departamento" else "Casa"
-
+                url_plano_comercial = producto_destacado.get('URLPlanoComercial', 'no especificado')
                 # Determina el prefijo adecuado ('el' o 'la') según el tipo de inmueble
                 if tipo_inmueble.lower() == 'departamento':
                     tipo_inmueble_texto = 'el departamento'
@@ -338,31 +406,45 @@ def chat(request):
                     f"Tenemos {tipo_inmueble_texto} número {producto_destacado.get('Numero', 'no especificado')} "
                     f"del proyecto {producto_destacado.get('NombreProyecto', 'no especificado').lower()} "
                     f"a un precio total de {producto_destacado.get('PrecioTotalUF', 'no especificado')} UF. "
+                    f"En esta imagen puedes ver el plano del inmueble:<br>(Haz click para verla en tamaño completo)<br>"
+                    f"<a href='{url_plano_comercial}' target='_blank'><img src='{url_plano_comercial}' style='width: 100px; height: auto;' alt='Plano Comercial'></a><br>"
                     f"{mensaje_despedida_seleccionado}"
                 )
                 
                 # Añade el mensaje construido a la variable de respuesta
                 response = mensaje_respuesta
 
-                productos_aleatorios = obtener_productos_activos(tipo_inmueble, rango_precio, url_cliente, dormitorios, banos, cantidad=5)
+                productos_aleatorios = random.sample(productos, min(len(productos), 5))
                 correo_destinatario = next((item['correo'] for item in session_data['context'] if 'correo' in item), None)
 
                 if correo_destinatario and productos_aleatorios:
                     # Leer la configuración personalizada
-                    configuracion = leer_configuracion(url_cliente)
-                    max_productos = int(configuracion.get('MAX_PRODUCTOS'))
+                    configuracion = leer_archivo_configuracion(url_cliente, proyecto)
+                    max_productos = int(configuracion.get('MAX_PRODUCTOS', 5))
                     saludo_correo = configuracion.get('SALUDO_CORREO', 'Saludo por defecto').format(primer_nombre=primer_nombre)
                     cierre_correo = configuracion.get('CIERRE_CORREO', 'Cierre por defecto')
                     template_name = configuracion.get('EMAIL_TEMPLATE', 'email_template.html')
 
-                    # Generar la lista de productos
+                    # Generar la lista de productos con imágenes de planos
                     productos_html = ""
                     for producto in productos_aleatorios[:max_productos]:
                         numero_producto = producto.get('Numero', 'desconocido')
                         nombre_proyecto = producto.get('NombreProyecto', 'desconocido').lower()
                         tipo_texto = 'Departamento' if tipo_inmueble.lower() == 'departamento' else 'Casa' if tipo_inmueble.lower() == 'casa' else 'Inmueble'
+                        
+                        url_plano_comercial = producto.get('URLPlanoComercial', '')
 
-                        productos_html += f"<div class='producto'>{tipo_texto} número {numero_producto} del proyecto {nombre_proyecto} a un precio de {producto['PrecioTotalUF']} UF</div>"
+                        productos_html += f"""
+                        <div class='producto'>
+                            {tipo_texto} número {numero_producto} de {dormitorios} dormitorios y {banos} baños del proyecto {nombre_proyecto} a un precio de {producto['PrecioTotalUF']} UF
+                            <div class='plano'>
+                                <p>Plano del inmueble:</p>
+                                <a href='{url_plano_comercial}' target='_blank'>
+                                    <img class='plano' src='{url_plano_comercial}' alt='Plano Comercial'>
+                                </a>
+                            </div>
+                        </div>
+                        """
 
                     # Leer el contenido del archivo HTML
                     template_path = os.path.join(settings.BASE_DIR, 'templates', template_name)
@@ -378,13 +460,13 @@ def chat(request):
                     contenido_correo = contenido_correo.replace('{{ productos_html }}', productos_html)
                     contenido_correo = contenido_correo.replace('{{ cierre_correo }}', cierre_correo)
 
-                    # Enviar el correo con el contenido generado
-                    enviar_correo_con_seleccion(correo_destinatario, contenido_correo, url_cliente)
+                    # Enviar el correo con el contenido generado al cotizante
+                    enviar_correo_a_cotizante(correo_destinatario, contenido_correo, url_cliente, proyecto)
 
                 # Verifica si ya se ha proporcionado el número de teléfono
                 if not session_data.get('ha_dado_telefono', False):
                     print("ha_dado_telefono es False, se debería pedir el teléfono.")  # Depuración
-                    response += " Para una forma de contacto más directa, ¿deseas otorgar tu número de teléfono?"
+                    response += obtener_pregunta('numero_telefono')
                     options = [
                         {'text': 'Sí, deseo dar mi número de teléfono', 'value': 'dar_telefono'},
                         {'text': 'No, gracias', 'value': 'no_dar_telefono'}
@@ -393,7 +475,7 @@ def chat(request):
                 else:
                     print("ha_dado_telefono es True, no se pide el teléfono.")  # Depuración
                     # Continuar al estado de finalización si ya se ha dado el teléfono
-                    response += " ¿Necesitas ayuda con otra cosa?"
+                    response += obtener_pregunta('necesitas_ayuda')
                     options = [
                         {'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
                         {'text': 'No, volver a inicio', 'value': 'inicio'}
@@ -403,14 +485,14 @@ def chat(request):
                 if not producto_destacado:
                     # Verifica si ya se ha proporcionado el número de teléfono
                     if not session_data.get('ha_dado_telefono', False):
-                        response = "Lo siento, no hemos encontrado inmuebles que coincidan con tus criterios. Para continuar con la cotización y tener una comunicación más directa, ¿te gustaría proporcionar un número de teléfono?"
+                        response = obtener_pregunta('no_inmuebles_ayuda_telefono')
                         options = [
                             {'text': 'Sí, deseo dar mi número de teléfono', 'value': 'dar_telefono'},
                             {'text': 'No, gracias', 'value': 'no_dar_telefono'}  
                         ]
                         session_data['state'] = 'solicitando_telefono'  # Cambio de estado para solicitar el teléfono
                     else:
-                        response = "Lo siento, no hemos encontrado inmuebles que coincidan con tus criterios. ¿Te puedo asistir en algo más?"
+                        response = obtener_pregunta('no_inmuebles_ayuda')
                         options = [
                             {'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
                             {'text': 'No, gracias', 'value': 'inicio'}
@@ -429,12 +511,12 @@ def chat(request):
 
     elif session_data['state'] == 'solicitando_telefono':
         if user_message == 'dar_telefono':
-            response = "Por favor, ingresa tu número de teléfono."
+            response = obtener_pregunta('ingresar_telefono')
             session_data['state'] = 'ingresando_telefono'
             options = []
         elif user_message == 'no_dar_telefono':
             session_data['ha_dado_telefono'] = True
-            response = "Entendido. ¿Te puedo ayudar en algo más?"
+            response = obtener_pregunta('necesitas_ayuda')
             session_data['state'] = 'finalizacion'
             options = [
                 {'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
@@ -445,59 +527,30 @@ def chat(request):
             nombre_completo = next((item['nombre_completo'] for item in session_data['context'] if 'nombre_completo' in item), "Desconocido")
             comuna = next((item['comuna'] for item in session_data['context'] if 'comuna' in item), "Desconocida")
 
-            # Correcciones condicionales para las comunas
-            correcciones = {
-                "nunoa": "Ñuñoa",
-                "penalolen": "Peñalolén",
-                "penaflor": "Peñaflor",
-                "rio ibanez": "Río Ibáñez",
-                "canete": "Cañete",
-                "niquen": "Ñiquén",
-                "hualane": "Hualañé",
-                "donihue": "Doñihue",
-                "vina de mar": "Viña del Mar",
-                "vicuna": "Vicuña",
-                "chanaral": "Chañaral",
-                "camina": "Camiña",
-            }
-
             # Aplicar la corrección si el nombre de la comuna necesita ser ajustado
             comuna_corregida = correcciones.get(comuna.lower(), comuna)
             correo = next((item['correo'] for item in session_data['context'] if 'correo' in item), "Desconocido")
             telefono = next((item['telefono'] for item in session_data['context'] if 'telefono' in item), "")
-            precio_texto_amigable = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
+            convertir_rango_precio_a_texto = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
             tipo_inmueble = next((item['tipo_inmueble'] for item in session_data['context'] if 'tipo_inmueble' in item), "Desconocido")
             dormitorios = next((item['dormitorios'] for item in session_data['context'] if 'dormitorios' in item), "Desconocido")
             banos = next((item['banos'] for item in session_data['context'] if 'banos' in item), "Desconocido")
+            proyecto = next((item['proyecto'] for item in session_data['context'] if 'proyecto' in item), "Desconocido")
 
-            # Llamar a send_email
-            send_email(nombre_completo, comuna_corregida, correo, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos, url_cliente)
+            # Enviar correo a Iconcreta para procesar al cotizante y subirlo al CRM
+            enviar_correo_iconcreta(nombre_completo, comuna_corregida, correo, telefono, convertir_rango_precio_a_texto, tipo_inmueble, dormitorios, banos, url_cliente, proyecto)
 
     elif session_data['state'] == 'ingresando_telefono':
         # Extracción de datos previos necesarios para enviar por correo
         nombre_completo = next((item['nombre_completo'] for item in session_data['context'] if 'nombre_completo' in item), "Desconocido")
         comuna = next((item['comuna'] for item in session_data['context'] if 'comuna' in item), "Desconocida")
         correo = next((item['correo'] for item in session_data['context'] if 'correo' in item), "Desconocido")
-        precio_texto_amigable = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
+        convertir_rango_precio_a_texto = next((precio_a_texto[item['rango_precio']] for item in session_data['context'] if 'rango_precio' in item), "Desconocido")
         tipo_inmueble = next((item['tipo_inmueble'] for item in session_data['context'] if 'tipo_inmueble' in item), "Desconocido")
         dormitorios = next((item['dormitorios'] for item in session_data['context'] if 'dormitorios' in item), "Desconocido")
         banos = next((item['banos'] for item in session_data['context'] if 'banos' in item), "Desconocido")
+        proyecto = next((item['proyecto'] for item in session_data['context'] if 'proyecto' in item), "Desconocido")
 
-        # Correcciones condicionales para las comunas
-        correcciones = {
-            "nunoa": "Ñuñoa",
-            "penalolen": "Peñalolen",
-            "penaflor": "Peñaflor",
-            "rio ibanez": "Rio Ibañez",
-            "canete": "Cañete",
-            "niquen": "Ñiquen",
-            "hualane": "Hualañe",
-            "donihue": "Doñihue",
-            "vina de mar": "Viña del Mar",
-            "vicuna": "Vicuña",
-            "chanaral": "Chañaral",
-            "camina": "Camiña",
-        }
         comuna_corregida = correcciones.get(comuna.lower(), comuna)
 
         # Eliminar espacios en blanco y el carácter '+' para la verificación
@@ -524,7 +577,7 @@ def chat(request):
                 session_data['ha_dado_telefono'] = True
                 response = f"Gracias por proporcionar tu número de teléfono. ¿Te puedo ayudar en algo más?"
                 # Enviar correo con datos recopilados, incluyendo el teléfono
-                send_email(nombre_completo, comuna_corregida, correo, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos, url_cliente)
+                enviar_correo_iconcreta(nombre_completo, comuna_corregida, correo, telefono, convertir_rango_precio_a_texto, tipo_inmueble, dormitorios, banos, url_cliente, proyecto)
                 options = [{'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
                         {'text': 'No, volver al inicio', 'value': 'inicio'}]
                 session_data['state'] = 'finalizacion'
@@ -532,18 +585,18 @@ def chat(request):
                 response = "No pude reconocer el número de teléfono en el formato esperado. ¿Puedes intentar de nuevo?"
                 options = []
         else:
-            prompt_verificacion = f"¿La frase '{user_message}' contiene un número de teléfono con al menos 8 dígitos numéricos? Solo responde sí o no."
-            respuesta_verificacion = generate_openai_response(prompt_verificacion)
+            prompt_validar_telefono = f"¿La frase '{user_message}' contiene un número de teléfono con al menos 8 dígitos numéricos? Solo responde sí o no."
+            respuesta_verificacion = llamar_openai(prompt_validar_telefono)
 
             if respuesta_verificacion.lower() == "sí":
-                prompt_ajuste = f"Extrae y ajusta al formato chileno el número de teléfono presente en la frase '{user_message}'. El formato chileno es '+569' seguido de los 8 dígitos locales para teléfonos móviles o '+562' seguido de los 8 dígitos locales para teléfonos fijos, entrégame como respuesta solo el número junto con el prefijo."
-                telefono = generate_openai_response(prompt_ajuste)
+                prompt_ajustar_telefono = f"Extrae y ajusta al formato chileno el número de teléfono presente en la frase '{user_message}'. El formato chileno es '+569' seguido de los 8 dígitos locales para teléfonos móviles o '+562' seguido de los 8 dígitos locales para teléfonos fijos, entrégame como respuesta solo el número junto con el prefijo."
+                telefono = llamar_openai(prompt_ajustar_telefono)
                 
                 if telefono:
                     session_data['context'].append({'telefono': telefono})
                     session_data['ha_dado_telefono'] = True
                     response = "Gracias por proporcionar tu número de teléfono. ¿Te puedo ayudar en algo más?"
-                    send_email(nombre_completo, comuna_corregida, correo, telefono, precio_texto_amigable, tipo_inmueble, dormitorios, banos, url_cliente)
+                    enviar_correo_iconcreta(nombre_completo, comuna_corregida, correo, telefono, convertir_rango_precio_a_texto, tipo_inmueble, dormitorios, banos, url_cliente)
                     options = [{'text': 'Sí, quiero seguir cotizando', 'value': 'cotizar'},
                             {'text': 'No, volver al inicio', 'value': 'inicio'}]
                     session_data['state'] = 'finalizacion'
@@ -557,28 +610,17 @@ def chat(request):
     elif session_data['state'] == 'finalizacion':
         if 'cotizar' in user_message:
             session_data['cotizacion_subsecuente'] = True
+            # Mantener los datos previos excepto los específicos de la cotización anterior
+            datos_a_mantener = ['nombre_completo', 'comuna', 'correo']
             session_data['context'] = [
                 item for item in session_data['context']
-                if 'rango_precio' not in item and 'tipo_inmueble' not in item and 'dormitorios' not in item and 'banos' not in item
+                if any(clave in item for clave in datos_a_mantener)
             ]
-            if session_data.get('busqueda_exitosa', False) and not session_data.get('ha_dado_telefono', False):
-                # Solicitar el número de teléfono solo si la búsqueda anterior fue exitosa
-                # y el teléfono no se ha proporcionado aún
-                response = "Para continuar con la cotización y tener una comunicación más directa, ¿te gustaría proporcionar un número de teléfono?"
-                options = [
-                    {'text': 'Sí, deseo dar mi número de teléfono', 'value': 'dar_telefono'},
-                    {'text': 'No, gracias', 'value': 'no_dar_telefono'}
-                ]
-                session_data['state'] = 'solicitando_telefono'
-            else:
-                # Continuar directamente con la cotización sin solicitar el teléfono
-                session_data['state'] = 'solicitando_tipo_inmueble'
-                response = "Genial, ¿qué tipo de inmueble estás buscando?"
-                options = [
-                    {'text': 'Departamento', 'value': 'departamento'},
-                    {'text': 'Casa', 'value': 'casa'}
-                ]
-                session_data['busqueda_exitosa'] = False
+            session_data['state'] = 'seleccionando_proyecto'
+            response = "Genial, ¿en cuál proyecto deseas cotizar?"
+            # Obtener las opciones de proyecto basadas en la URL del cliente
+            options = obtener_opciones_proyectos(url_cliente)
+            session_data['busqueda_exitosa'] = False
         elif 'inicio' in user_message:
             # Reiniciar completamente la sesión si el usuario elige volver al inicio
             session_data.clear()
@@ -591,7 +633,7 @@ def chat(request):
 
     request.session[session_key] = session_data
 
-    return JsonResponse({'respuesta': response, 'options': options})
+    return JsonResponse({'respuesta': response, 'options': options, 'state': session_data['state']})
 
-def chat_view(request):
-    return render(request, 'chat.html', {})
+def chatbot_index(request):
+    return render(request, 'chatbot_index.html', {})

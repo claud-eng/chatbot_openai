@@ -89,6 +89,12 @@ WSGI_APPLICATION = 'chatbot_project.wsgi.application'
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
 
+# Ajustar la duración de la sesión a 30 días (30 * 24 * 60 * 60 segundos)
+SESSION_COOKIE_AGE = 2592000  # 30 días en segundos
+
+# Asegurarse de que la sesión no expire al cerrar el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
